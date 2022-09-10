@@ -499,11 +499,18 @@ export const command = {
                 break;
             }
             case "player::listAll":{
-
                 let meta = player.musicList.map(meta => ({user:meta.user, date:meta.dateAdded, title:meta.videoDetails.title}));
                 // console.log(names);
                 showMusicList(interaction, meta);
                 return;
+            }
+            case "player::shuffle":{
+                player.musicList = player.musicList.sort(() => Math.random() - 0.5);
+                break;
+            }
+            case "player::loop":{
+                player.isLooping=!player.isLooping;
+                break;
             }
         }
         await db.set(id, player);
