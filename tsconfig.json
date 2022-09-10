@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "module": "commonjs",
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "target": "ES2020",
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "lib": ["ES2020"],
+        "diagnostics": true,
+        "pretty": true,
+        "strict": false
+    }
+}
