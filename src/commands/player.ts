@@ -121,11 +121,6 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
     const btnRow1 = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
-                .setCustomId('player::showAddDialog')
-                .setEmoji('➕')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(false),
-            new ButtonBuilder()
                 .setCustomId('player::previous')
                 .setEmoji('⏮️')
                 .setStyle(ButtonStyle.Secondary)
@@ -139,14 +134,32 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
                 .setCustomId('player::next')
                 .setEmoji('⏭️')
                 .setStyle(ButtonStyle.Secondary)
-                .setDisabled(player.index >= player.musicList.length && !player.isLooping || player.musicList.length <= 0),
+                .setDisabled(player.index >= player.musicList.length && !player.isLooping || player.musicList.length <= 0)
+        );
+    const btnRow2 = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('player::showAddDialog')
+                .setEmoji('➕')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(false),
             new ButtonBuilder()
                 .setCustomId('player::listAll')
                 .setEmoji('📃')
                 .setStyle(ButtonStyle.Secondary)
-                .setDisabled(player.musicList.length == 0)
+                .setDisabled(player.musicList.length == 0),
+            new ButtonBuilder()
+                .setCustomId('player::loop')
+                .setEmoji('🔁')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(false),
+            new ButtonBuilder()
+                .setCustomId('player::shuffle')
+                .setEmoji('🔀')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(player.musicList.length == 0),
         );
-    const btnRow2 = new ActionRowBuilder()
+    const btnRow3 = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('player::clear')
@@ -177,7 +190,7 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
         return {
             embeds: [embed],
             ephemeral: true,
-            components: [btnRow1, btnRow2]
+            components: [btnRow1, btnRow2, btnRow3]
         };
     }
 
@@ -487,11 +500,18 @@ export const command = {
                 break;
             }
             case "player::listAll":{
-
                 let meta = player.musicList.map(meta => ({user:meta.user, date:meta.dateAdded, title:meta.videoDetails.title}));
                 // console.log(names);
                 showMusicList(interaction, meta);
                 return;
+            }
+            case "player::shuffle":{
+                player.musicList = player.musicList.sort(() => Math.random() - 0.5);
+                break;
+            }
+            case "player::loop":{
+                player.isLooping=!player.isLooping;
+                break;
             }
         }
         await db.set(id, player);
