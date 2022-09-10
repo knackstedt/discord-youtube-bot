@@ -96,10 +96,23 @@ async function handleAudioResource(url) {
     }));
 }
 
+//TODO:
+// add buttons if there are more then 10 in the play list to show only 10 at
+// a time, a backards button and a forwards button
+// better timestamp text
+async function showMusicList(interaction: CommandInteraction, list) {
+    console.log(list);
+    let out: string = "";
+    for (let i in list){
+        out += `\x1b[31m${trimEllip(list[i].title, 40)}\x1b[37m added by \x1b[32m${list[i].user.name}\x1b[37m at \x1b[34m${new Date(list[i].date)?.toLocaleString()}\n`;
+    }
+    interaction.reply({ content: `\`\`\`ansi\n${out}\`\`\``, ephemeral: true });
+}
+
 async function renderGui(interaction: CommandInteraction, player: MusicPlayerData) {
     const member = interaction.member as GuildMember;
     const id = interaction.guildId + "/" + member.voice.channelId;
-
+    
     const botUser = interaction.guild.members.me;
 
     if (botUser.voice.channelId && member.voice.channelId != botUser.voice.channelId)
@@ -107,6 +120,11 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
 
     const btnRow1 = new ActionRowBuilder()
         .addComponents(
+            new ButtonBuilder()
+                .setCustomId('player::showAddDialog')
+                .setEmoji('➕')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(false),
             new ButtonBuilder()
                 .setCustomId('player::previous')
                 .setEmoji('⏮️')
@@ -122,11 +140,6 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
                 .setEmoji('⏭️')
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(player.index >= player.musicList.length && !player.isLooping || player.musicList.length <= 0),
-            new ButtonBuilder()
-                .setCustomId('player::showAddDialog')
-                .setEmoji('➕')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(false),
             new ButtonBuilder()
                 .setCustomId('player::listAll')
                 .setEmoji('📃')
@@ -147,7 +160,7 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
                 .setDisabled(false),
             new ButtonBuilder()
                 .setCustomId('player::debug')
-                .setEmoji('🐞')
+                .setEmoji('🔎')
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(false)
         );
@@ -332,8 +345,17 @@ export const command = {
 
         let audioStream = getAudioStream(interaction);
 
+
+
+
         // ... 
         if (!customId) {
+
+            player.index = 0;
+            player.musicList = [];
+            audioStream.audioPlayer?.stop();
+            await db.set(id,player);
+
             playMusic(audioStream, player, id, interaction);
             // await interaction.deferUpdate();
             const member = interaction.member as GuildMember;
@@ -363,6 +385,16 @@ export const command = {
                 let url = interaction.fields.fields.get("youtubeVideoUrl").value;
 
                 let meta = await getVideoMeta(url);
+                const member = interaction.member as GuildMember;
+
+                meta.user = {
+                    id: member.id,
+                    name: member.displayName,
+                    nick: member.nickname,
+                    avatar: member.avatarURL
+                };
+                
+                meta.dateAdded = Date.now();
 
                 // Add new song to list.
                 player.musicList.push(meta);
@@ -453,6 +485,13 @@ export const command = {
                 console.log("Player:", player);
                 console.log("audioPlayer:", musicStreams[id]?.audioPlayer?.state?.status);
                 break;
+            }
+            case "player::listAll":{
+
+                let meta = player.musicList.map(meta => ({user:meta.user, date:meta.dateAdded, title:meta.videoDetails.title}));
+                // console.log(names);
+                showMusicList(interaction, meta);
+                return;
             }
         }
         await db.set(id, player);
