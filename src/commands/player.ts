@@ -1,22 +1,6 @@
 import ytdl from 'ytdl-core';
-import {
-    createAudioResource,
-    joinVoiceChannel,
-    getVoiceConnection,
-    createAudioPlayer,
-    AudioPlayer,
-    AudioResource
-} from '@discordjs/voice';
-import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    Collection,
-    EmbedBuilder,
-    TextInputBuilder,
-    ModalBuilder,
-    GuildMember
-} from 'discord.js';
+import { createAudioResource, joinVoiceChannel, getVoiceConnection, createAudioPlayer, AudioPlayer, AudioResource } from '@discordjs/voice';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, TextInputBuilder, ModalBuilder, GuildMember, ButtonComponentData } from 'discord.js';
 import { Client, Interaction, CommandInteraction } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import db from "../db";
@@ -26,7 +10,7 @@ function trimEllip(src, length) {
     return src.length > length ? src.substring(0, length) + "..." : src;
 }
 
-const theme = "original";
+const themeName = "original";
 
 const themePack = {
     original : {
@@ -38,20 +22,44 @@ const themePack = {
     shade: {
         //███████░░░░░░
         "elapsed": "█",
-        "thumb": "█",
+        "thumb": "▒",
         "pending": "░"
     },
     ascii: {
-        //=======-------
+        //======+-------
         "elapsed": "=",
-        "thumb": "=",
+        "thumb": "+",
         "pending": "-"
     }
+};
+
+// This is the base theme that can be overridden.
+const baseTheme = {
+    "previous": "⏮️",
+    "next": "⏭️",
+    "pause": "⏸️",
+    "play": "▶️",
+    "add": "➕",
+    "repeat": "🔁",
+    "random": "🔀",
+    "mute": "🔇",
+    "unmute": "🔈",
+    "volumedown": "🔉",
+    "volumeup": "🔊",
+    "clear": "🗑",
+    "stop": "🛑",
+    // "📋"
 }
 
-const barElapsed = themePack[theme].elapsed;
-const barThumb = themePack[theme].thumb;
-const barPending = themePack[theme].pending;
+const theme = {
+    ...baseTheme,
+    ...themePack["ascii"],
+    ...themePack[themeName]
+}
+
+const barElapsed = themePack[themeName].elapsed;
+const barThumb = themePack[themeName].thumb;
+const barPending = themePack[themeName].pending;
 
 
 
@@ -118,66 +126,77 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
     if (botUser.voice.channelId && member.voice.channelId != botUser.voice.channelId)
         return { content: 'user has left the channel', ephemeral: true };
 
-    const btnRow1 = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('player::showAddDialog')
-                .setEmoji('➕')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(false),
-            new ButtonBuilder()
-                .setCustomId('player::previous')
-                .setEmoji('⏮️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(player.index == 0 && !player.isLooping || player.musicList.length <= 0),
-            new ButtonBuilder()
-                .setCustomId(player.isPaused ? "player::play" : "player::pause")
-                .setEmoji(player.isPaused ? '▶️' : '⏸️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(!player.musicList.length),
-            new ButtonBuilder()
-                .setCustomId('player::next')
-                .setEmoji('⏭️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(player.index >= player.musicList.length && !player.isLooping || player.musicList.length <= 0),
-            new ButtonBuilder()
-                .setCustomId('player::listAll')
-                .setEmoji('📃')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(player.musicList.length == 0)
-        );
-    const btnRow2 = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('player::clear')
-                .setEmoji('🗑️')
-                .setStyle(ButtonStyle.Danger)
-                .setDisabled(player.musicList.length <= 0),
-            new ButtonBuilder()
-                .setCustomId('player::stop')
-                .setEmoji('🛑')
-                .setStyle(ButtonStyle.Danger)
-                .setDisabled(false),
-            new ButtonBuilder()
-                .setCustomId('player::debug')
-                .setEmoji('🔎')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(false)
-        );
+    const buttons: Partial<ButtonComponentData>[][] = [
+        [
+            {
+                customId: 'player::previous',
+                emoji: theme.previous,
+                style: ButtonStyle.Secondary,
+                disabled: player.index == 0 && !player.isLooping || player.musicList.length <= 0
+            },
+            {
+                customId: player.isPaused ? "player::play" : "player::pause",
+                emoji: player.isPaused ? theme.play : theme.pause,
+                style: ButtonStyle.Secondary,
+                disabled: !player.musicList.length
+            },
+            {
+                customId: 'player::next',
+                emoji: theme.next,
+                style: ButtonStyle.Primary,
+                disabled: player.index >= player.musicList.length && !player.isLooping || player.musicList.length <= 0
+            },
+            {
+                customId: 'player::showAddDialog',
+                emoji: theme.add,
+                style: ButtonStyle.Success,
+                disabled: false
+            },
+            {
+                customId: 'player::listAll',
+                emoji: '📃',
+                style: ButtonStyle.Secondary,
+                disabled: player.musicList.length == 0
+            },
+        ],
+        [
+            {
+                customId: 'player::clear',
+                emoji: theme.clear,
+                style: ButtonStyle.Danger,
+                disabled: player.musicList.length <= 0
+            },
+            {
+                customId: 'player::stop',
+                emoji: theme.stop,
+                style: ButtonStyle.Danger,
+                disabled: false
+            },
+            {
+                customId: 'player::debug',
+                emoji: '🔎',
+                style: ButtonStyle.Primary,
+                disabled: false
+            }
+        ]
+    ];
+    let btnResult = buttons.map(buttonRow => new ActionRowBuilder().addComponents(
+            buttonRow.map((button) => new ButtonBuilder(button as any))
+    ));
 
     if (player.musicList.length == 0) {
         const embed = new EmbedBuilder()
             .setTitle('Music Player')
             .setDescription("Music Player")
             .setColor('#ff0000')
-            .addFields({ name: 'Track 0 of 0', value: "None Selected" })
+            .addFields({ name: `Track 0 of 0`, value: "None Selected" })
             .setFooter({ text: 'Posted by ' + "" })
             .setAuthor({ name: "Music Player Bot" });
 
         return {
             embeds: [embed],
             ephemeral: true,
-            components: [btnRow1, btnRow2]
+            components: btnResult
         };
     }
 
@@ -200,7 +219,6 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
     const currentSec = Math.round(current % 60);
 
     const sliderIndex = Math.round((30 * current) / vidDuration);
-
     const trackText = (''.padStart(sliderIndex - 1, barElapsed) + barThumb).padEnd(30, barPending);
 
     const mdLink = `[*${trimEllip(metadata.videoDetails.title, 60)}*](https://www.youtube.com/watch?v=${metadata.videoDetails.videoId})`;
@@ -209,8 +227,8 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
     ${mdLink}
     `;
 
-    const currentTime = currentMin.toString().padStart(2, "0") + ":" + currentSec.toString().padStart(2, "0");
-    const totalTime = min.toString().padStart(2, "0") + ":" + sec.toString().padStart(2, "0");
+    const currentTime = currentMin.toString().padStart(2, '0') + ":" + currentSec.toString().padStart(2, '0');
+    const totalTime = min.toString().padStart(2, '0') + ":" + sec.toString().padStart(2, '0');
     // Main text content
     const body = `${currentTime} \`${trackText}\` ${totalTime}`;
     
@@ -218,7 +236,7 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
         .setTitle('Music Player')
         .setDescription(description)
         .setColor('#ff0000')
-        .addFields({ name: `Track ${player.index} of ${player.musicList.length}`, value: body })
+        .addFields({ name: `Track ${player.index+1} of ${player.musicList.length}`, value: body })
         // .addFields({ name: 'Songs in Queue', value: .toString() })
         .setFooter({ text: 'Posted by ' + metadata.videoDetails.ownerChannelName })
         .setAuthor({ name: metadata.videoDetails.ownerChannelName })
@@ -226,7 +244,7 @@ async function renderGui(interaction: CommandInteraction, player: MusicPlayerDat
 
     // Bot should join channel here
 
-    return { embeds: [embed], ephemeral: true, components: [btnRow1, btnRow2] }
+    return { embeds: [embed], ephemeral: true, components: btnResult }
 }
 
 function getAudioStream(interaction) {
@@ -350,12 +368,6 @@ export const command = {
 
         // ... 
         if (!customId) {
-
-            player.index = 0;
-            player.musicList = [];
-            audioStream.audioPlayer?.stop();
-            await db.set(id,player);
-
             playMusic(audioStream, player, id, interaction);
             // await interaction.deferUpdate();
             const member = interaction.member as GuildMember;
