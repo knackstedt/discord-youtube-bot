@@ -65,7 +65,6 @@ export class MusicPlayerServer {
     }
 
     async onInteractionCreate(interaction: CommandInteraction) {
-
         const guild = interaction.guild.name;
         const channel = interaction.channel.name;
         const user = interaction.user.username;
@@ -74,7 +73,7 @@ export class MusicPlayerServer {
 
         // const originalCommand = customId.split("_")[0]
         
-        let commandGroup = interaction.commandName || customId.split('::')[0];
+        let commandGroup = interaction.commandName || (customId.split('::')[0]?.split('[')[0] );
         console.log(`Begin processing command [${customId || commandGroup}]`);
 
         try {
