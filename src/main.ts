@@ -69,6 +69,8 @@ export class MusicPlayerServer {
         const channel = interaction.channel.name;
         const user = interaction.user.username;
 
+        this.commands.get("logger") as Command
+
         const customId: string = interaction['customId'];
 
         // const originalCommand = customId.split("_")[0]
