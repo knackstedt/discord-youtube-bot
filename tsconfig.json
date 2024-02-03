@@ -4,6 +4,7 @@
         "module": "commonjs",
         "resolveJsonModule": true,
         "esModuleInterop": true,
+        "skipLibCheck": true,
         "target": "ES2020",
         "rootDir": "./src",
         "outDir": "./dist",

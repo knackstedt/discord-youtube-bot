@@ -2,30 +2,30 @@
   "name": "discord-music-player",
   "version": "1.0.0",
   "private": false,
-  "main": "dist/main.js",
+  "main": "./src/main.js",
   "files": [
-    "dist",
+    "src",
     "readme.md",
     "ssl.md",
     "static"
   ],
   "scripts": {
     "prestart": "tsc",
-    "start": "node main.js",
+    "start": "bun ./src/main.ts",
     "build": "tsc",
     "build:prod": "tsc",
-    "dev": "nodemon main.ts",
+    "dev": "nodemon ./src/main.ts",
     "dev:inspect": "nodemon --ext \"ts,json\" --ignore \"src /**/*.spec.ts\" --exec \"node --inspect=0.0.0.0:9229 --require ts-node/register ./main.ts\""
   },
   "dependencies": {
-    "@discordjs/builders": "^1.2.0",
+    "@discordjs/builders": "^1.7.0",
     "@discordjs/voice": "^0.11.0",
-    "discord.js": "^14.3.0",
-    "dotenv": "^16.0.2",
-    "ioredis": "^5.2.3",
-    "rxjs": "^7.5.6",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "ioredis": "^5.3.2",
+    "rxjs": "^7.8.1",
     "tweetnacl": "^1.0.3",
-    "ytdl-core": "^4.11.2",
+    "ytdl-core": "^4.11.5",
     "ytpl": "^2.3.0"
   },
   "devDependencies": {
